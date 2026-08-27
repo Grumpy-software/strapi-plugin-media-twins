@@ -1,0 +1,17 @@
+{
+  "plugin.name": "Media Twins",
+  "plugin.description": "Find exact duplicates, similar images, and unused Media Library files.",
+  "header.title": "Media Twins",
+  "header.subtitle": "{fileCount} files in the library · {reclaimable} KB reclaimable from unused files",
+  "actions.scan": "Scan",
+  "actions.scanning": "Scanning media…",
+  "tabs.exact": "Exact duplicates",
+  "tabs.similar": "Similar images",
+  "tabs.unused": "Unused",
+  "empty.exact": "No exact duplicates in this library.",
+  "empty.similar": "No similar images at this threshold.",
+  "empty.unused": "No unused files.",
+  "settings.title": "Media Twins",
+  "settings.threshold": "Similarity threshold (Hamming distance)",
+  "error.stillReferenced": "Delete refused: one or more files are still referenced."
+}
