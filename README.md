@@ -3,6 +3,7 @@
 **Strapi 5 plugin** that finds exact duplicate media, similar images, and unused Media Library files — then lets you reassign references or delete leftovers without silent data loss.
 
 > Strapi `^5.0.0` only. Not compatible with Strapi v4.
+> The admin UI requires `@strapi/design-system` and `@strapi/icons` v2 (`^2.0.0-rc`), which is what the Strapi 5 admin panel ships with. Design-system/icons v1 hosts are not supported.
 
 Exact duplicates are grouped by **SHA-256 of file bytes**, not filename. Similar images use **pHash and dHash** with a configurable Hamming-distance threshold. Unused detection covers morph relations (including components and dynamic zones) **and** soft references inside rich-text / Blocks (url or hash in text).
 
