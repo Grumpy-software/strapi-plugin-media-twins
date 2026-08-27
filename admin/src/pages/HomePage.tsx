@@ -1,7 +1,9 @@
-import { Alert, Box, Button, Checkbox, Flex, Loader, Typography } from '@strapi/design-system';
+import { Alert, Badge, Box, Button, Checkbox, Flex, Loader, TextButton, Typography } from '@strapi/design-system';
+import { ArrowClockwise, Duplicate, GridFour, Images, List, Search, Trash } from '@strapi/icons';
 import { Page, useFetchClient, useNotification, useRBAC } from '@strapi/strapi/admin';
-import { useMemo, useState, type CSSProperties } from 'react';
+import { useMemo, useState } from 'react';
 import { useIntl } from 'react-intl';
+import styled from 'styled-components';
 
 import type { DeletePlan, FileGroup, MediaFile, ReassignPlan, ScanResult } from '../api/types';
 import { FileCard } from '../components/FileCard';
@@ -170,62 +172,105 @@ const HomePage = () => {
     await runScan();
   };
 
+  const reclaimable = scan ? formatKb(scan.unused.reclaimableKb) : null;
+
   return (
     <Page.Protect permissions={pluginPermissions.see}>
       <Page.Main>
-        <Box padding={8}>
-          <Flex justifyContent="space-between" alignItems="flex-start" wrap="wrap" gap={4}>
-            <Box>
-              <Typography variant="alpha" as="h1">
-                {formatMessage({ id: getTranslation('header.title'), defaultMessage: 'Media Twins' })}
-              </Typography>
-              <Typography variant="epsilon" textColor="neutral600">
-                {scan
-                  ? `${scan.stats.fileCount} files in the library · ${Math.round(scan.unused.reclaimableKb)} KB reclaimable from unused files`
-                  : 'Scan the Media Library for exact duplicates, similar images, and unused files.'}
-              </Typography>
-            </Box>
-            <Button onClick={runScan} loading={loading} disabled={!allowedActions.canSee}>
-              {formatMessage({ id: getTranslation('actions.scan'), defaultMessage: 'Scan' })}
-            </Button>
-          </Flex>
-
-          <Box paddingTop={6}>
-            <Flex gap={2} wrap="wrap">
-              <TabButton active={tab === 'exact'} onClick={() => setTab('exact')} label={`Exact duplicates${countLabel(scan?.exact.length)}`} />
-              <TabButton active={tab === 'similar'} onClick={() => setTab('similar')} label={`Similar images${countLabel(scan?.similar.length)}`} />
-              <TabButton active={tab === 'unused'} onClick={() => setTab('unused')} label={`Unused${countLabel(scan?.unused.fileIds.length)}`} />
+        <PageWrap>
+          <Box paddingLeft={10} paddingRight={10} paddingTop={8} paddingBottom={preview ? 24 : 8}>
+            {/* ------------------------------ Header ------------------------------ */}
+            <Flex justifyContent="space-between" alignItems="flex-start" wrap="wrap" gap={4} width="100%">
+              <Box>
+                <Typography variant="beta" tag="h1">
+                  {formatMessage({ id: getTranslation('header.title'), defaultMessage: 'Media Twins' })}
+                </Typography>
+                <Box paddingTop={1}>
+                  <Typography variant="epsilon" textColor="neutral600">
+                    {scan
+                      ? 'Review the groups below, pick a canonical file per group, then reassign or delete.'
+                      : 'Scan the Media Library for exact duplicates, similar images, and unused files.'}
+                  </Typography>
+                </Box>
+              </Box>
+              <Button onClick={runScan} loading={loading} disabled={!allowedActions.canSee} startIcon={scan ? <ArrowClockwise /> : undefined} size="L">
+                {formatMessage(
+                  scan
+                    ? { id: getTranslation('actions.rescan'), defaultMessage: 'Scan again' }
+                    : { id: getTranslation('actions.scan'), defaultMessage: 'Scan' }
+                )}
+              </Button>
             </Flex>
-          </Box>
 
-          <Box paddingTop={4}>
-            <Flex justifyContent="space-between" wrap="wrap" gap={3}>
-              <Flex gap={3} wrap="wrap" alignItems="center">
-                <input
-                  value={query}
-                  onChange={(event) => setQuery(event.target.value)}
-                  placeholder="Search by filename"
-                  style={searchStyle}
-                />
-                <Button variant={layout === 'grid' ? 'secondary' : 'tertiary'} onClick={() => setLayout('grid')}>
-                  Grid
-                </Button>
-                <Button variant={layout === 'list' ? 'secondary' : 'tertiary'} onClick={() => setLayout('list')}>
-                  List
-                </Button>
+            {/* ---------------------------- Stat strip ---------------------------- */}
+            {scan ? (
+              <StatStrip>
+                <Stat value={String(scan.stats.fileCount)} label="files in library" />
+                <StatDivider />
+                <Stat value={String(scan.exact.length)} label="exact groups" />
+                <StatDivider />
+                <Stat value={String(scan.similar.length)} label="similar groups" />
+                <StatDivider />
+                <Stat value={String(scan.unused.fileIds.length)} label="unused files" />
+                <StatDivider />
+                <Stat value={reclaimable ?? '0 KB'} label="reclaimable" accent />
+              </StatStrip>
+            ) : null}
+
+            {/* ------------------------------- Tabs ------------------------------- */}
+            <TabsBar role="tablist">
+              <TabItem role="tab" aria-selected={tab === 'exact'} $active={tab === 'exact'} onClick={() => setTab('exact')}>
+                Exact duplicates
+                {scan ? <Badge active={tab === 'exact'}>{scan.exact.length}</Badge> : null}
+              </TabItem>
+              <TabItem role="tab" aria-selected={tab === 'similar'} $active={tab === 'similar'} onClick={() => setTab('similar')}>
+                Similar images
+                {scan ? <Badge active={tab === 'similar'}>{scan.similar.length}</Badge> : null}
+              </TabItem>
+              <TabItem role="tab" aria-selected={tab === 'unused'} $active={tab === 'unused'} onClick={() => setTab('unused')}>
+                Unused
+                {scan ? <Badge active={tab === 'unused'}>{scan.unused.fileIds.length}</Badge> : null}
+              </TabItem>
+            </TabsBar>
+
+            {/* ------------------------------ Toolbar ------------------------------ */}
+            <Toolbar>
+              <Flex gap={3} alignItems="center" wrap="wrap">
+                <SearchBox>
+                  <Search aria-hidden width={12} height={12} />
+                  <input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search by filename" aria-label="Search by filename" />
+                </SearchBox>
+                <Segmented>
+                  <SegmentButton type="button" aria-label="Grid" title="Grid" $active={layout === 'grid'} onClick={() => setLayout('grid')}>
+                    <GridFour width={14} height={14} />
+                  </SegmentButton>
+                  <SegmentButton type="button" aria-label="List" title="List" $active={layout === 'list'} onClick={() => setLayout('list')}>
+                    <List width={14} height={14} />
+                  </SegmentButton>
+                </Segmented>
                 <Flex gap={2} alignItems="center">
-                  <Checkbox checked={showIgnored} onCheckedChange={() => setShowIgnored((value) => !value)} />
-                  <Typography variant="pi">Show ignored</Typography>
+                  <Checkbox checked={showIgnored} onCheckedChange={() => setShowIgnored((value) => !value)} aria-label="Show ignored" />
+                  <Typography variant="pi" textColor="neutral600">
+                    Show ignored
+                  </Typography>
                 </Flex>
               </Flex>
-              <Flex gap={2} wrap="wrap">
+              <Flex gap={3} alignItems="center" wrap="wrap">
+                {selectedIds.length > 0 ? (
+                  <>
+                    <Typography variant="pi" textColor="neutral600">
+                      {selectedIds.length} selected
+                    </Typography>
+                    <TextButton onClick={() => setSelected({})}>Clear</TextButton>
+                  </>
+                ) : null}
                 {tab !== 'unused' && allowedActions.canReassign ? (
-                  <Button variant="secondary" onClick={openReassignPreview} disabled={visibleGroups.length === 0 || busy}>
+                  <Button variant="secondary" startIcon={<Duplicate />} onClick={openReassignPreview} disabled={visibleGroups.length === 0 || busy}>
                     Preview reassign
                   </Button>
                 ) : null}
                 {tab === 'unused' && allowedActions.canDelete ? (
-                  <Button variant="danger-light" onClick={() => openDeletePreview(selectedIds)} disabled={selectedIds.length === 0 || busy}>
+                  <Button variant="danger-light" startIcon={<Trash />} onClick={() => openDeletePreview(selectedIds)} disabled={selectedIds.length === 0 || busy}>
                     Preview delete
                   </Button>
                 ) : null}
@@ -235,71 +280,74 @@ const HomePage = () => {
                   </Button>
                 ) : null}
               </Flex>
-            </Flex>
-          </Box>
+            </Toolbar>
 
-          {error ? (
-            <Box paddingTop={4}>
-              <Alert closeLabel="Close" variant="danger" onClose={() => setError(null)}>
-                {error}
-              </Alert>
-            </Box>
-          ) : null}
+            {error ? (
+              <Box paddingTop={4} width="100%">
+                <Alert closeLabel="Close" variant="danger" onClose={() => setError(null)}>
+                  {error}
+                </Alert>
+              </Box>
+            ) : null}
 
-          <Box paddingTop={6}>
-            {loading ? (
-              <Flex justifyContent="center" padding={8} gap={3} direction="column" alignItems="center">
-                <Loader />
-                <Typography textColor="neutral600">Scanning media…</Typography>
-              </Flex>
-            ) : !scan ? (
-              <EmptyState title="No scan yet" text="Run a scan to group exact duplicates, similar images, and unused files." />
-            ) : tab === 'unused' ? (
-              unusedFiles.length === 0 ? (
-                <EmptyState title="No unused files." text="Every Media Library file is referenced by a relation or a rich-text / Blocks soft reference." />
-              ) : (
-                <FileGrid
-                  files={unusedFiles}
-                  layout={layout}
-                  selected={selected}
-                  ignoredIds={ignoredIds}
-                  onToggle={(id) => setSelected((current) => ({ ...current, [id]: !current[id] }))}
+            {/* ------------------------------ Results ------------------------------ */}
+            <Box paddingTop={5} width="100%">
+              {loading ? (
+                <Flex justifyContent="center" padding={8} gap={3} direction="column" alignItems="center">
+                  <Loader />
+                  <Typography textColor="neutral600">Scanning media…</Typography>
+                </Flex>
+              ) : !scan ? (
+                <EmptyState title="No scan yet" text="Run a scan to group exact duplicates, similar images, and unused files." />
+              ) : tab === 'unused' ? (
+                unusedFiles.length === 0 ? (
+                  <EmptyState title="No unused files." text="Every Media Library file is referenced by a relation or a rich-text / Blocks soft reference." />
+                ) : (
+                  <UnusedPanel $list={layout === 'list'}>
+                    <FileGrid
+                      files={unusedFiles}
+                      layout={layout}
+                      selected={selected}
+                      ignoredIds={ignoredIds}
+                      onToggle={(id) => setSelected((current) => ({ ...current, [id]: !current[id] }))}
+                    />
+                  </UnusedPanel>
+                )
+              ) : visibleGroups.length === 0 ? (
+                <EmptyState
+                  title={tab === 'exact' ? 'No exact duplicates in this library.' : 'No similar images at this threshold.'}
+                  text={tab === 'similar' ? `Current Hamming threshold: ${scan.config.similarityThreshold}. Video similarity is out of v1.` : 'SHA-256 matched no byte-identical copies.'}
                 />
-              )
-            ) : visibleGroups.length === 0 ? (
-              <EmptyState
-                title={tab === 'exact' ? 'No exact duplicates in this library.' : 'No similar images at this threshold.'}
-                text={tab === 'similar' ? `Current Hamming threshold: ${scan.config.similarityThreshold}. Video similarity is out of v1.` : 'SHA-256 matched no byte-identical copies.'}
-              />
-            ) : (
-              <Flex direction="column" gap={6}>
-                {visibleGroups.map((group) => (
-                  <GroupBlock
-                    key={group.id}
-                    group={group}
-                    filesById={filesById}
-                    layout={layout}
-                    canonicalId={canonicalByGroup[group.id] ?? group.canonicalId}
-                    selected={selected}
-                    ignoredIds={ignoredIds}
-                    onCanonical={(id) => setCanonicalByGroup((current) => ({ ...current, [group.id]: id }))}
-                    onToggle={(id) => setSelected((current) => ({ ...current, [id]: !current[id] }))}
-                  />
-                ))}
-              </Flex>
-            )}
+              ) : (
+                <GroupStack>
+                  {visibleGroups.map((group) => (
+                    <GroupBlock
+                      key={group.id}
+                      group={group}
+                      filesById={filesById}
+                      layout={layout}
+                      canonicalId={canonicalByGroup[group.id] ?? group.canonicalId}
+                      selected={selected}
+                      ignoredIds={ignoredIds}
+                      onCanonical={(id) => setCanonicalByGroup((current) => ({ ...current, [group.id]: id }))}
+                      onToggle={(id) => setSelected((current) => ({ ...current, [id]: !current[id] }))}
+                    />
+                  ))}
+                </GroupStack>
+              )}
+            </Box>
           </Box>
-        </Box>
 
-        {preview ? (
-          <PreviewPanel
-            preview={preview}
-            filesById={filesById}
-            busy={busy}
-            onClose={() => setPreview(null)}
-            onApply={preview.kind === 'reassign' ? applyReassign : applyDelete}
-          />
-        ) : null}
+          {preview ? (
+            <PreviewPanel
+              preview={preview}
+              filesById={filesById}
+              busy={busy}
+              onClose={() => setPreview(null)}
+              onApply={preview.kind === 'reassign' ? applyReassign : applyDelete}
+            />
+          ) : null}
+        </PageWrap>
       </Page.Main>
     </Page.Protect>
   );
@@ -308,6 +356,8 @@ const HomePage = () => {
 type PreviewState =
   | { kind: 'reassign'; canonicalId: number; extraIds: number[]; plan: ReassignPlan }
   | { kind: 'delete'; fileIds: number[]; plan: DeletePlan };
+
+/* ------------------------------- Group card ------------------------------- */
 
 const GroupBlock = ({
   group,
@@ -329,27 +379,48 @@ const GroupBlock = ({
   onToggle: (id: number) => void;
 }) => {
   const files = group.fileIds.map((id) => filesById.get(id)).filter((file): file is MediaFile => Boolean(file));
+  const extrasKb = files.filter((file) => file.id !== canonicalId).reduce((sum, file) => sum + file.size, 0);
 
   return (
-    <Box background="neutral100" hasRadius padding={4}>
-      <Flex justifyContent="space-between" paddingBottom={4} wrap="wrap" gap={2}>
-        <Typography fontWeight="bold">
-          {group.kind === 'exact' ? 'Exact group' : 'Similar group'} · {files.length} files
-        </Typography>
-        <Typography variant="pi" textColor="neutral600">
-          {group.reason}
-        </Typography>
-      </Flex>
-      <FileGrid
-        files={files}
-        layout={layout}
-        selected={selected}
-        ignoredIds={ignoredIds}
-        canonicalId={canonicalId}
-        onCanonical={onCanonical}
-        onToggle={onToggle}
-      />
-    </Box>
+    <GroupCard>
+      <GroupHeader>
+        <Flex gap={2} alignItems="center" wrap="wrap">
+          <Badge backgroundColor={group.kind === 'exact' ? 'primary600' : 'alternative600'} textColor="neutral0">
+            {group.kind === 'exact' ? 'Exact' : 'Similar'}
+          </Badge>
+          <Typography variant="pi" fontWeight="bold">
+            {files.length} files
+          </Typography>
+          <Typography variant="pi" textColor="neutral600">
+            · {formatKb(extrasKb)} in extras
+          </Typography>
+        </Flex>
+        <GroupReason title={group.reason}>{group.reason}</GroupReason>
+      </GroupHeader>
+      {layout === 'grid' ? (
+        <GroupBody>
+          <FileGrid
+            files={files}
+            layout={layout}
+            selected={selected}
+            ignoredIds={ignoredIds}
+            canonicalId={canonicalId}
+            onCanonical={onCanonical}
+            onToggle={onToggle}
+          />
+        </GroupBody>
+      ) : (
+        <FileGrid
+          files={files}
+          layout={layout}
+          selected={selected}
+          ignoredIds={ignoredIds}
+          canonicalId={canonicalId}
+          onCanonical={onCanonical}
+          onToggle={onToggle}
+        />
+      )}
+    </GroupCard>
   );
 };
 
@@ -369,28 +440,27 @@ const FileGrid = ({
   canonicalId?: number;
   onCanonical?: (id: number) => void;
   onToggle: (id: number) => void;
-}) => (
-  <div
-    style={{
-      display: 'grid',
-      gridTemplateColumns: layout === 'grid' ? 'repeat(auto-fill, minmax(220px, 1fr))' : '1fr',
-      gap: 16,
-    }}
-  >
-    {files.map((file) => (
-      <FileCard
-        key={file.id}
-        file={file}
-        layout={layout}
-        selected={Boolean(selected[file.id])}
-        canonical={canonicalId === file.id}
-        disabled={ignoredIds.has(file.id)}
-        onToggle={() => onToggle(file.id)}
-        onCanonical={onCanonical && canonicalId !== file.id ? () => onCanonical(file.id) : undefined}
-      />
-    ))}
-  </div>
-);
+}) => {
+  const cards = files.map((file) => (
+    <FileCard
+      key={file.id}
+      file={file}
+      layout={layout}
+      selected={Boolean(selected[file.id])}
+      canonical={canonicalId === file.id}
+      disabled={ignoredIds.has(file.id)}
+      onToggle={() => onToggle(file.id)}
+      onCanonical={onCanonical && canonicalId !== file.id ? () => onCanonical(file.id) : undefined}
+    />
+  ));
+
+  if (layout === 'list') {
+    return <ListStack>{cards}</ListStack>;
+  }
+  return <TileGrid>{cards}</TileGrid>;
+};
+
+/* ------------------------------ Preview panel ----------------------------- */
 
 const PreviewPanel = ({
   preview,
@@ -406,59 +476,77 @@ const PreviewPanel = ({
   onApply: () => void;
 }) => {
   const blocked = preview.kind === 'delete' ? preview.plan.blocked : [];
+  const canonical = preview.kind === 'reassign' ? filesById.get(preview.canonicalId) : undefined;
 
   return (
-    <Box
-      background="neutral0"
-      borderColor="neutral200"
-      padding={6}
-      style={{ position: 'sticky', bottom: 0, borderTop: '1px solid #dcdce4' }}
-    >
-      <Typography variant="delta" as="h2">
-        Preview changes
-      </Typography>
-      <Box paddingTop={3}>
-        {preview.kind === 'reassign' ? (
-          <Typography>
-            Canonical file {fileName(filesById, preview.canonicalId)}. {preview.plan.morphUpdates.length} morph
-            relation(s) and {preview.plan.softRewrites.length} rich-text / Blocks field(s) will be rewritten. Then{' '}
-            {preview.extraIds.length} extra file(s) will be deleted if the verify step finds no remaining references.
+    <PreviewBar>
+      <PreviewInfo>
+        <Flex gap={2} alignItems="center">
+          {preview.kind === 'reassign' ? <Duplicate width={16} height={16} aria-hidden /> : <Trash width={16} height={16} aria-hidden />}
+          <Typography variant="omega" fontWeight="bold">
+            {preview.kind === 'reassign' ? 'Reassign preview' : 'Delete preview'}
           </Typography>
-        ) : (
-          <Typography>
-            {preview.fileIds.length} file(s) selected for deletion.
-            {blocked.length > 0
-              ? ` ${blocked.length} still referenced — apply will be refused.`
-              : ' A pre-delete scan found no references.'}
-          </Typography>
-        )}
-      </Box>
-      <Flex paddingTop={4} gap={2}>
-        <Button onClick={onApply} loading={busy} disabled={blocked.length > 0} variant={preview.kind === 'delete' ? 'danger' : 'default'}>
-          Apply
-        </Button>
+          {canonical?.mime.startsWith('image/') ? <PreviewThumb src={canonical.formats?.thumbnail?.url || canonical.url} alt="" /> : null}
+        </Flex>
+        <Typography variant="pi" textColor="neutral600">
+          {preview.kind === 'reassign' ? (
+            <>
+              Keep <strong>{fileName(filesById, preview.canonicalId)}</strong>. Rewrites{' '}
+              <strong>{preview.plan.morphUpdates.length}</strong> morph relation(s) and{' '}
+              <strong>{preview.plan.softRewrites.length}</strong> rich-text / Blocks field(s), then deletes{' '}
+              <strong>{preview.extraIds.length}</strong> extra file(s) if the verify step finds no remaining references.
+            </>
+          ) : (
+            <>
+              <strong>{preview.fileIds.length}</strong> file(s) selected for deletion.
+              {blocked.length > 0 ? (
+                <>
+                  {' '}
+                  <strong>{blocked.length}</strong> still referenced — apply will be refused.
+                </>
+              ) : (
+                ' A pre-delete scan found no references.'
+              )}
+            </>
+          )}
+        </Typography>
+      </PreviewInfo>
+      <Flex gap={2} shrink={0}>
         <Button variant="tertiary" onClick={onClose} disabled={busy}>
           Cancel
         </Button>
+        <Button onClick={onApply} loading={busy} disabled={blocked.length > 0} variant={preview.kind === 'delete' ? 'danger' : 'default'}>
+          Apply
+        </Button>
       </Flex>
-    </Box>
+    </PreviewBar>
   );
 };
 
-const TabButton = ({ active, label, onClick }: { active: boolean; label: string; onClick: () => void }) => (
-  <Button variant={active ? 'secondary' : 'tertiary'} onClick={onClick}>
-    {label}
-  </Button>
+/* ------------------------------- Small parts ------------------------------ */
+
+const Stat = ({ value, label, accent }: { value: string; label: string; accent?: boolean }) => (
+  <StatItem>
+    <Typography variant="delta" fontWeight="bold" textColor={accent ? 'success600' : 'neutral800'}>
+      {value}
+    </Typography>
+    <Typography variant="pi" textColor="neutral600">
+      {label}
+    </Typography>
+  </StatItem>
 );
 
 const EmptyState = ({ title, text }: { title: string; text: string }) => (
-  <Box background="neutral100" hasRadius padding={8}>
+  <EmptyWrap>
+    <Images width={32} height={32} aria-hidden />
     <Typography variant="delta">{title}</Typography>
-    <Box paddingTop={2}>
-      <Typography textColor="neutral600">{text}</Typography>
-    </Box>
-  </Box>
+    <Typography variant="pi" textColor="neutral600">
+      {text}
+    </Typography>
+  </EmptyWrap>
 );
+
+/* --------------------------------- helpers -------------------------------- */
 
 function defaultCanonicals(data: ScanResult) {
   const map: Record<string, number> = {};
@@ -475,8 +563,11 @@ function matchesQuery(file: MediaFile, query: string) {
   return file.name.toLowerCase().includes(query.trim().toLowerCase());
 }
 
-function countLabel(count?: number) {
-  return typeof count === 'number' ? ` (${count})` : '';
+function formatKb(kb: number) {
+  if (kb >= 1024) {
+    return `${(kb / 1024).toFixed(1)} MB`;
+  }
+  return `${Math.round(kb)} KB`;
 }
 
 function unwrap<T>(response: unknown): T {
@@ -503,12 +594,226 @@ function useSafeNotification() {
   }
 }
 
-const searchStyle: CSSProperties = {
-  height: 40,
-  border: '1px solid #dcdce4',
-  borderRadius: 4,
-  padding: '0 12px',
-  minWidth: 220,
-};
+/* --------------------------------- styles --------------------------------- */
+
+const PageWrap = styled.div`
+  width: 100%;
+`;
+
+const StatStrip = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding: 12px 16px;
+  background: ${({ theme }) => theme.colors.neutral0};
+  border: 1px solid ${({ theme }) => theme.colors.neutral150};
+  border-radius: ${({ theme }) => theme.borderRadius};
+`;
+
+const StatItem = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  min-width: 64px;
+
+  & > * {
+    display: block;
+  }
+`;
+
+const StatDivider = styled.div`
+  width: 1px;
+  align-self: stretch;
+  background: ${({ theme }) => theme.colors.neutral150};
+`;
+
+const TabsBar = styled.div`
+  display: flex;
+  gap: 24px;
+  margin-top: 20px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.neutral200};
+`;
+
+const TabItem = styled.button<{ $active: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: none;
+  padding: 10px 2px;
+  margin-bottom: -1px;
+  cursor: pointer;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: ${({ theme, $active }) => ($active ? theme.colors.primary600 : theme.colors.neutral600)};
+  border-bottom: 2px solid ${({ theme, $active }) => ($active ? theme.colors.primary600 : 'transparent')};
+
+  &:hover {
+    color: ${({ theme }) => theme.colors.primary600};
+  }
+`;
+
+const Toolbar = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+`;
+
+const SearchBox = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 10px;
+  min-width: 220px;
+  background: ${({ theme }) => theme.colors.neutral0};
+  border: 1px solid ${({ theme }) => theme.colors.neutral200};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.neutral500};
+
+  &:focus-within {
+    border-color: ${({ theme }) => theme.colors.primary600};
+  }
+
+  input {
+    border: 0;
+    outline: 0;
+    background: none;
+    flex: 1;
+    font-size: 1.3rem;
+    color: ${({ theme }) => theme.colors.neutral800};
+
+    &::placeholder {
+      color: ${({ theme }) => theme.colors.neutral500};
+    }
+  }
+`;
+
+const Segmented = styled.div`
+  display: inline-flex;
+  border: 1px solid ${({ theme }) => theme.colors.neutral200};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  overflow: hidden;
+`;
+
+const SegmentButton = styled.button<{ $active: boolean }>`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 30px;
+  border: 0;
+  cursor: pointer;
+  background: ${({ theme, $active }) => ($active ? theme.colors.primary100 : theme.colors.neutral0)};
+  color: ${({ theme, $active }) => ($active ? theme.colors.primary600 : theme.colors.neutral600)};
+
+  & + & {
+    border-left: 1px solid ${({ theme }) => theme.colors.neutral200};
+  }
+`;
+
+const GroupStack = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+`;
+
+const GroupCard = styled.div`
+  width: 100%;
+  background: ${({ theme }) => theme.colors.neutral0};
+  border: 1px solid ${({ theme }) => theme.colors.neutral150};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  overflow: hidden;
+`;
+
+const GroupHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid ${({ theme }) => theme.colors.neutral150};
+  background: ${({ theme }) => theme.colors.neutral100};
+`;
+
+const GroupReason = styled.span`
+  color: ${({ theme }) => theme.colors.neutral500};
+  font-size: 1.1rem;
+  font-family: ui-monospace, 'SF Mono', monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+`;
+
+const GroupBody = styled.div`
+  padding: 12px;
+`;
+
+const TileGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+  width: 100%;
+`;
+
+const ListStack = styled.div`
+  width: 100%;
+`;
+
+const UnusedPanel = styled.div<{ $list: boolean }>`
+  width: 100%;
+  ${({ $list, theme }) =>
+    $list
+      ? `background: ${theme.colors.neutral0}; border: 1px solid ${theme.colors.neutral150}; border-radius: ${theme.borderRadius}; overflow: hidden;`
+      : ''}
+`;
+
+const EmptyWrap = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 48px 24px;
+  background: ${({ theme }) => theme.colors.neutral0};
+  border: 1px dashed ${({ theme }) => theme.colors.neutral200};
+  border-radius: ${({ theme }) => theme.borderRadius};
+  color: ${({ theme }) => theme.colors.neutral400};
+  text-align: center;
+`;
+
+const PreviewBar = styled.div`
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  padding: 12px 40px;
+  background: ${({ theme }) => theme.colors.neutral0};
+  border-top: 1px solid ${({ theme }) => theme.colors.neutral200};
+  box-shadow: 0 -2px 8px rgba(33, 33, 52, 0.1);
+`;
+
+const PreviewInfo = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+`;
+
+const PreviewThumb = styled.img`
+  width: 24px;
+  height: 24px;
+  border-radius: ${({ theme }) => theme.borderRadius};
+  object-fit: cover;
+`;
 
 export { HomePage };
