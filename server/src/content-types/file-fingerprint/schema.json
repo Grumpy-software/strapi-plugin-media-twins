@@ -1,0 +1,43 @@
+{
+  "kind": "collectionType",
+  "collectionName": "media_twins_fingerprints",
+  "info": {
+    "singularName": "file-fingerprint",
+    "pluralName": "file-fingerprints",
+    "displayName": "Media Twins Fingerprint"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": false
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "fileId": {
+      "type": "integer",
+      "required": true,
+      "unique": true
+    },
+    "sha256": {
+      "type": "string",
+      "required": true
+    },
+    "phash": {
+      "type": "string"
+    },
+    "dhash": {
+      "type": "string"
+    },
+    "byteSize": {
+      "type": "biginteger"
+    },
+    "sourceUpdatedAt": {
+      "type": "datetime"
+    }
+  }
+}

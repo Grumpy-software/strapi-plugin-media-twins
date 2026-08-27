@@ -1,0 +1,39 @@
+{
+  "kind": "collectionType",
+  "collectionName": "media_twins_ignores",
+  "info": {
+    "singularName": "ignore-entry",
+    "pluralName": "ignore-entries",
+    "displayName": "Media Twins Ignore"
+  },
+  "options": {
+    "draftAndPublish": false
+  },
+  "pluginOptions": {
+    "content-manager": {
+      "visible": false
+    },
+    "content-type-builder": {
+      "visible": false
+    }
+  },
+  "attributes": {
+    "kind": {
+      "type": "enumeration",
+      "enum": ["file", "folder"],
+      "required": true
+    },
+    "fileId": {
+      "type": "integer"
+    },
+    "folderId": {
+      "type": "integer"
+    },
+    "folderPath": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    }
+  }
+}
