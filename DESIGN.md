@@ -1,4 +1,4 @@
-# Media Twins — Design
+# Media Twins - Design
 
 Marketplace plugin **`strapi-plugin-media-twins`** for **Strapi 5 only** (`^5.0.0`).
 Plugin id: **`media-twins`**. Admin section: **Media Twins**.
@@ -11,11 +11,11 @@ This document is the source of truth for architecture, data model, algorithms, a
 
 The Media Library accumulates:
 
-1. **Exact duplicates** — the same bytes uploaded more than once (often under different names).
-2. **Similar images** — resized, recompressed, or slightly cropped copies that look the same.
-3. **Orphans** — files referenced nowhere, including media pasted into rich-text / Blocks (no morph row).
+1. **Exact duplicates** - the same bytes uploaded more than once (often under different names).
+2. **Similar images** - resized, recompressed, or slightly cropped copies that look the same.
+3. **Orphans** - files referenced nowhere, including media pasted into rich-text / Blocks (no morph row).
 
-Operators need to **see groups**, **preview** a rewrite, **reassign** references to one canonical file, and **delete** leftovers — without silent data loss.
+Operators need to **see groups**, **preview** a rewrite, **reassign** references to one canonical file, and **delete** leftovers - without silent data loss.
 
 v1 is **images-first**. Video **similarity** is out of scope (expensive decode + keyframes). Videos still participate in **exact** (SHA-256) and **unused** scans.
 
@@ -38,14 +38,14 @@ Discarded guesses are called out.
 | Delete | `strapi.plugin('upload').service('upload').remove(file)` with the **full file object**. That deletes provider bytes, **formats/thumbnails**, then the `files` row. Passing only `{ id }` is unsafe / incomplete. |
 | Permissions | Register with `strapi.admin.services.permission.actionProvider.registerMany` in `bootstrap`. Protect admin routes with `admin::hasPermissions`. Protect pages with `<Page.Protect>` + `useRBAC`. Menu `permissions` only hide the link. |
 | Admin HTTP | `useFetchClient()` / `getFetchClient()` from `@strapi/strapi/admin`. |
-| Design system | `@strapi/design-system` + `@strapi/icons` + `@strapi/strapi/admin` (`Page`, layouts). Native Media Library look — not a custom design system. |
-| Local TS plugin | Node loads `strapi-server` as JS. Published / path-installed plugins must ship **built** `dist/` (or a JS entry). Admin TS is compiled by the host admin build when using `source`, and by the plugin build for npm. |
+| Design system | `@strapi/design-system` + `@strapi/icons` + `@strapi/strapi/admin` (`Page`, layouts). Native Media Library look - not a custom design system. |
+| Local TS plugin | Node loads `strapi-server` as JS. Published / path-installed plugins must ship **built** `dist/` (or a JS entry). Admin TS is compiled by the host admin build when using `source`, and by the plugin build for publishing. |
 
 Existing plugins used as **behavioural references**, not source copies:
 
-- **PaulRichez/strapi-plugin-unused-media** — morph scan + deep text/hash scan + ignore-list + delete via upload service + native ML look.
-- **strapi-plugin-media-usage** — `files_related_mph` + BFS up `*_cmps` to parent entries (we reuse the morph table, not the CM injection).
-- **duplicate-analyzer** class plugins — filename-based grouping is **wrong** for this product; we use cryptographic + perceptual hashes.
+- **PaulRichez/strapi-plugin-unused-media** - morph scan + deep text/hash scan + ignore-list + delete via upload service + native ML look.
+- **strapi-plugin-media-usage** - `files_related_mph` + BFS up `*_cmps` to parent entries (we reuse the morph table, not the CM injection).
+- **duplicate-analyzer** class plugins - filename-based grouping is **wrong** for this product; we use cryptographic + perceptual hashes.
 
 ---
 
@@ -81,7 +81,7 @@ v1 runs the scan in the request. Fingerprints are cached so repeats are cheap. N
 
 ```ts
 {
-  similarityThreshold: 10,   // Hamming distance, inclusive. Integer 0–64.
+  similarityThreshold: 10,   // Hamming distance, inclusive. Integer 0-64.
   similarSkipExact: true,    // exact groups are not also listed as similar
   deepScanDefault: true,     // unused scan includes rich-text / Blocks
 }
@@ -169,7 +169,7 @@ Either hash matching is enough so a crop that breaks one still hits the other.
 
 **Clustering:** union-find over all image pairs that pass the test. Groups with size ≥ 2 are returned.
 
-**Flat images:** a solid-color canvas yields an all-zero pHash and dHash (no AC energy / no adjacent contrast). Those hashes are **not** used for similar pairing — otherwise every empty rectangle would cluster. They still participate in exact SHA-256 groups.
+**Flat images:** a solid-color canvas yields an all-zero pHash and dHash (no AC energy / no adjacent contrast). Those hashes are **not** used for similar pairing - otherwise every empty rectangle would cluster. They still participate in exact SHA-256 groups.
 
 If `similarSkipExact` is true, drop groups whose every member shares one SHA-256 (already shown under Exact). A mixed group (exact twins + a resized cousin) stays under Similar.
 
@@ -195,7 +195,7 @@ Always run the same reference check as a **pre-delete safety net**, even if the 
 
 Input: `canonicalId`, `extraIds[]` (canonical ∉ extras).
 
-**Phase A — rewrite (dry-run builds the same plan without writes)**
+**Phase A - rewrite (dry-run builds the same plan without writes)**
 
 1. **Morph:** for each extra row:
    - If a row already exists for `(canonicalId, related_id, related_type, field)`, delete the extra row (avoid unique / duplicate media).
@@ -204,11 +204,11 @@ Input: `canonicalId`, `extraIds[]` (canonical ∉ extras).
    - String / richtext: replace extra `url` → canonical `url`, extra `hash` → canonical `hash`. Prefer longest tokens first (format urls before hash) to avoid partial clobber.
    - Blocks / JSON: walk the tree; if a node looks like a file snapshot (`hash` + `url`) matching an extra, replace with the canonical snapshot (id, documentId, hash, url, name, ext, mime, size, width, height, formats, …). Then still run string replace on serialized leftovers.
 
-**Phase B — verify**
+**Phase B - verify**
 
 Re-run morph + deep-scan **only for extras**. If any extra is still referenced → **do not delete**. Return `{ rewritten: true, deleted: false, blocked: [...] }`. Content already points at the canonical; leftovers remain until a retry or manual delete.
 
-**Phase C — delete**
+**Phase C - delete**
 
 `upload.remove(fullFile)` for each extra. Provider deletes original + `formats`. Fingerprint rows for those ids are removed.
 
@@ -234,7 +234,7 @@ All routes are **admin** (`type: 'admin'`), authenticated, namespaced `/media-tw
 | Method | Path | Permission | Purpose |
 | --- | --- | --- |
 | GET | `/config` | `see` | Effective config |
-| PUT | `/config` | `configure` | Persist threshold override in plugin store (optional; file config wins if set — v1: store overlay) |
+| PUT | `/config` | `configure` | Persist threshold override in plugin store (optional; file config wins if set - v1: store overlay) |
 | POST | `/scan` | `see` | Body: `{ types?: ['exact','similar','unused'], deep?: boolean }` |
 | POST | `/reassign/preview` | `reassign` | Plan only |
 | POST | `/reassign` | `reassign` | Apply rewrite + verify + delete extras |
@@ -259,11 +259,11 @@ Super Admin receives them via Strapi’s usual action sync.
 
 ## 7. Admin UX
 
-Native Media Library language — not a marketing landing page.
+Native Media Library language - not a marketing landing page.
 
 - Sidebar: **Media Twins** with a picture/landscape icon (same weight as Media Library).
 - Page header: title, subtitle (library size vs reclaimable), primary **Scan**.
-- Tabs: **Exact duplicates** · **Similar images** · **Unused**.
+- Tabs: **Exact duplicates** - **Similar images** - **Unused**.
 - Toolbar: grid / list toggle, “Show ignored”, search by filename, Hamming threshold hint on Similar.
 - **Cards** reuse ML patterns: square preview (`url` or format thumbnail), filename, size, folder path, mime badge. Checkbox for bulk.
 - **Groups:** one card row per group; radio / “Set as canonical” on one file; extras selected by default except canonical.
@@ -308,7 +308,7 @@ No live S3. Image hashes in tests use tiny generated PNGs (or precomputed matric
 
 ---
 
-## 10. npm / marketplace packaging
+## 10. Package / marketplace packaging
 
 - Name: `strapi-plugin-media-twins`
 - `strapi.kind`: `plugin`
@@ -320,7 +320,7 @@ No live S3. Image hashes in tests use tiny generated PNGs (or precomputed matric
 - Scripts: `build` / `watch` / `verify` via `@strapi/sdk-plugin`, `test` via vitest
 - `files`: `dist`, README, DESIGN, LICENSE
 - License: MIT
-- README: marketplace description, install (`npm i strapi-plugin-media-twins` or local path), `config/plugins.ts`, permissions, usage, threshold, v1 video note
+- README: marketplace description, install (`pnpm add strapi-plugin-media-twins` or local path), `config/plugins.ts`, permissions, usage, threshold, v1 video note
 
 Install in a host app:
 
@@ -335,7 +335,7 @@ export default {
 };
 ```
 
-Or `npm i` the package; Strapi 5 discovers `strapi.kind === 'plugin'` from `node_modules` when enabled.
+Or `pnpm add` the package; Strapi 5 discovers `strapi.kind === 'plugin'` from `node_modules` when enabled.
 
 Published package must be **built** (`strapi-plugin build && strapi-plugin verify`).
 
