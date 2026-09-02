@@ -43,7 +43,7 @@ export default () => ({
 });
 ```
 
-Local path (this repo, after `ppnpm run build`):
+Local path (this repo, after `pnpm run build`):
 
 ```ts
 export default () => ({
@@ -57,7 +57,7 @@ export default () => ({
 });
 ```
 
-Rebuild the admin panel (`ppnpm run build` / `ppnpm run develop` in the Strapi app). Grant the new permissions under **Settings → Administration panel → Roles**.
+Rebuild the admin panel (`pnpm run build` / `pnpm run develop` in the Strapi app). Grant the new permissions under **Settings → Administration panel → Roles**.
 
 ## Configuration
 
@@ -98,13 +98,13 @@ See [DESIGN.md](./DESIGN.md) for algorithms, the morph table (`files_related_mph
 ## Develop
 
 ```bash
-ppnpm install
-pppnpm test
-pppnpm run build
-pppnpm run verify
+pnpm install
+pnpm test
+pnpm run build
+pnpm run verify
 ```
 
-`ppnpm test` covers hash grouping, similarity threshold, orphan detection including a Blocks soft-ref, reassign rewrite + verify, and delete refused when still referenced.
+`pnpm test` covers hash grouping, similarity threshold, orphan detection including a Blocks soft-ref, reassign rewrite + verify, and delete refused when still referenced.
 
 ## Marketplace
 
