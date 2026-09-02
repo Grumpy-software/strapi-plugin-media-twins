@@ -1,6 +1,6 @@
 # Media Twins
 
-**Strapi 5 plugin** that finds exact duplicate media, similar images, and unused Media Library files — then lets you reassign references or delete leftovers without silent data loss.
+**Strapi 5 plugin** that finds exact duplicate media, similar images, and unused Media Library files - then lets you reassign references or delete leftovers without silent data loss.
 
 > Strapi `^5.0.0` only. Not compatible with Strapi v4.
 > The admin UI requires `@strapi/design-system` and `@strapi/icons` v2 (`^2.0.0-rc`), which is what the Strapi 5 admin panel ships with. Design-system/icons v1 hosts are not supported.
@@ -9,11 +9,11 @@ Exact duplicates are grouped by **SHA-256 of file bytes**, not filename. Similar
 
 ## Features
 
-- **Exact duplicates** — cryptographic hash of the original file bytes
-- **Similar images** — perceptual hashes; resized, recompressed, or lightly cropped copies match
-- **Unused / orphans** — no morph row and no inline url/hash in rich-text or Blocks
-- **Reassign** — pick a canonical file, rewrite relations + inline refs, verify, then delete extras (and their formats) through the upload service
-- **Delete** — only after a pre-delete scan shows the file is unreferenced
+- **Exact duplicates** - cryptographic hash of the original file bytes
+- **Similar images** - perceptual hashes; resized, recompressed, or lightly cropped copies match
+- **Unused / orphans** - no morph row and no inline url/hash in rich-text or Blocks
+- **Reassign** - pick a canonical file, rewrite relations + inline refs, verify, then delete extras (and their formats) through the upload service
+- **Delete** - only after a pre-delete scan shows the file is unreferenced
 - **Dry-run / preview** before apply
 - **Ignore-list** for a file or an entire folder
 - **Role-based permissions**: see / configure / reassign / delete
@@ -24,7 +24,7 @@ Video **similarity** is out of v1 (decode cost). Videos still appear in exact-du
 ## Install
 
 ```bash
-npm install strapi-plugin-media-twins
+pnpm add strapi-plugin-media-twins
 ```
 
 Enable the plugin:
@@ -35,7 +35,7 @@ export default () => ({
   'media-twins': {
     enabled: true,
     config: {
-      similarityThreshold: 10, // Hamming distance, 0–64
+      similarityThreshold: 10, // Hamming distance, 0-64
       similarSkipExact: true,
       deepScanDefault: true,
     },
@@ -43,7 +43,7 @@ export default () => ({
 });
 ```
 
-Local path (this repo, after `npm run build`):
+Local path (this repo, after `ppnpm run build`):
 
 ```ts
 export default () => ({
@@ -57,7 +57,7 @@ export default () => ({
 });
 ```
 
-Rebuild the admin panel (`npm run build` / `npm run develop` in the Strapi app). Grant the new permissions under **Settings → Administration panel → Roles**.
+Rebuild the admin panel (`ppnpm run build` / `ppnpm run develop` in the Strapi app). Grant the new permissions under **Settings → Administration panel → Roles**.
 
 ## Configuration
 
@@ -98,13 +98,13 @@ See [DESIGN.md](./DESIGN.md) for algorithms, the morph table (`files_related_mph
 ## Develop
 
 ```bash
-npm install
-npm test
-npm run build
-npm run verify
+pnpm install
+ppnpm test
+ppnpm run build
+ppnpm run verify
 ```
 
-`npm test` covers hash grouping, similarity threshold, orphan detection including a Blocks soft-ref, reassign rewrite + verify, and delete refused when still referenced.
+`ppnpm test` covers hash grouping, similarity threshold, orphan detection including a Blocks soft-ref, reassign rewrite + verify, and delete refused when still referenced.
 
 ## Marketplace
 
