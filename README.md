@@ -98,10 +98,10 @@ See [DESIGN.md](./DESIGN.md) for algorithms, the morph table (`files_related_mph
 ## Develop
 
 ```bash
-pnpm install
-ppnpm test
-ppnpm run build
-ppnpm run verify
+ppnpm install
+pppnpm test
+pppnpm run build
+pppnpm run verify
 ```
 
 `ppnpm test` covers hash grouping, similarity threshold, orphan detection including a Blocks soft-ref, reassign rewrite + verify, and delete refused when still referenced.
